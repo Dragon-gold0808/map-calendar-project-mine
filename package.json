@@ -1,0 +1,33 @@
+{
+  "name": "connect-google-auth-article",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node -r dotenv/config server.js dotenv_config_path=./.env.development",
+    "build": "node -r dotenv/config server.js dotenv_config_path=./.env.production",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@google-cloud/local-auth": "^2.1.0",
+    "base-64": "^1.0.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.1",
+    "express-sse": "^0.5.3",
+    "firebase-admin": "^11.10.1",
+    "google-auth-library": "^8.5.0",
+    "googleapis": "^105.0.0",
+    "jsonwebtoken": "^8.5.1",
+    "localtunnel": "^2.0.2",
+    "moment": "^2.29.4",
+    "mongodb": "^6.0.0",
+    "mongoose": "^7.5.0",
+    "node-geocoder": "^4.2.0",
+    "nodemon": "^2.0.20"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

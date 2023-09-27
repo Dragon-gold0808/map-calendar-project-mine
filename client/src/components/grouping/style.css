@@ -1,0 +1,61 @@
+.c-multi-drag-table.is-dragging table {
+  border: 1px solid #4285f4;
+}
+.c-multi-drag-table .ant-col {
+  position: relative;
+}
+.c-multi-drag-table .ant-col:first-child:after {
+  display: block;
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: #e2e2e2;
+  z-index: 1;
+}
+.c-multi-drag-table .inner-col {
+  position: relative;
+  height: 100%;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  padding: 10px;
+  /* z-index: 2; */
+}
+.c-multi-drag-table .ant-table {
+  border: 1px solid #f0f0f0;
+}
+.c-multi-drag-table .ant-table-thead > tr > th,
+.c-multi-drag-table .ant-table-tbody > tr > td,
+.c-multi-drag-table .ant-table tfoot > tr > th,
+.c-multi-drag-table .ant-table tfoot > tr > td {
+  padding: 6px 16px;
+}
+.c-multi-drag-table .ant-table-tbody > tr.ant-table-placeholder > td,
+.c-multi-drag-table .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+  background: transparent;
+}
+.c-multi-drag-table .ant-table-tbody > tr.row-item {
+  background: #fff;
+}
+.c-multi-drag-table
+  .ant-table-tbody.is-dragging-over
+  > tr.ant-table-placeholder {
+  background: #deebff !important;
+}
+.c-multi-drag-table .ant-table-tbody > tr.row-item.row-selected {
+  background: #deebff;
+}
+.c-multi-drag-table .ant-table-tbody > tr.row-item.row-dragging {
+  display: table;
+  color: #fff;
+  background: #4285f4;
+  border: 1px solid #f0f0f0;
+}
+.c-multi-drag-table .ant-table-tbody > tr.row-item.row-dragging > td {
+  border-bottom: 0;
+}
+.c-multi-drag-table .ant-table-tbody > tr.row-item.row-ghosting {
+  opacity: 0.5;
+}

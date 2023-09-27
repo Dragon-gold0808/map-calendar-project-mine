@@ -1,0 +1,53 @@
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: #f2f2f2;
+}
+
+thead td {
+  font-weight: bold;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+tbody td {
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+button {
+  padding: 5px 10px;
+  background-color: #17d81e;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.sidebar {
+  width: 250px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 10px;
+}
+
+.sidebar ul li a {
+  color: #333;
+  text-decoration: none;
+}
+
+.sidebar ul li a:hover {
+  color: #4caf50;
+}

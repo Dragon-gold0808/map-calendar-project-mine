@@ -1,0 +1,9 @@
+{
+    "type": "authorized_user",
+    "client_id": "907994042525-g93okf82un8q6jcpk1ngaf2oh8m4qrvh.apps.googleusercontent.com",
+    "client_secret": "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",
+    "refresh_token": "1//0cXrWQpMizV-TCgYIARAAGAwSNgF-L9IrtlHVSlt57BDU7xXEAADrba_6vaCtPMSyjrpGRa8_UDYwUj_Hi97Aia9OUtmyyUd61w",
+    "redirect_uris": [
+        "http://localhost:5000/oauth2callback"
+    ]
+}
