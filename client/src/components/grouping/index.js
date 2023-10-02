@@ -265,9 +265,16 @@ export const GroupingCalendars = ({ calendars, data }) => {
       editable: false,
       render: (text, record) => {
         return (
-          <a>
-            <DeleteOutlined onClick={() => handleDelete(record.key)} />
-          </a>
+          <Popconfirm
+            title="Warning"
+            description={`Are you sure want to delete?`}
+            onConfirm={() => handleDelete(record.key)}
+            key={record.email}
+          >
+            <a>
+              <DeleteOutlined />
+            </a>
+          </Popconfirm>
         );
       },
     },

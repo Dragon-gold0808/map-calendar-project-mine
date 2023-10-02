@@ -196,7 +196,7 @@ app.post("/api/update-status", async (req, res) => {
   const newUserId = encode(req.body.email);
   const newUserRef = usersRef.child(newUserId);
   const newUser = {
-    state: req.body.newState,
+    ...req.body,
     checkedAt:
       req.body.checked === "checked"
         ? moment().format("YYYY-MM-DD HH:mm:ss A")
@@ -751,74 +751,104 @@ app.get("/api/get-event", async (req, res) => {
 });
 
 app.get("/api/get-events", async (req, res) => {
-  res.writeHead(200, {
-    Connection: "keep-alive",
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    "Access-Control-Allow-Origin": APP_URL,
-    "Access-Control-Allow-credentials": "true",
-  });
-  // Get events data from Firebase Realtime Database
+  // res.writeHead(200, {
+  //   Connection: "keep-alive",
+  //   "Content-Type": "text/event-stream",
+  //   "Cache-Control": "no-cache",
+  //   "Access-Control-Allow-Origin": APP_URL,
+  //   "Access-Control-Allow-credentials": "true",
+  // });
+  // // Get events data from Firebase Realtime Database
   console.log(
     req.query.email,
     "was logged in at",
     moment().format("MMM DD, HH:mm:ss A"),
     process.env.SUPERADMIN_EMAIL
   );
-  const eventsRef = await admin
+  const userId = encode(req.query.email);
+  const userRef = await admin
     .database()
-    .ref("meta")
-    .orderByKey()
+    .ref("users")
+    .child(userId)
     .once("value");
-  const geocodedEvents = eventsRef.val();
-  const events = geocodedEvents ? Object.values(geocodedEvents) : null;
-  res.write("event: initialResponse\n");
-  res.write("data: " + JSON.stringify(events) + "\n\n");
+  const currentUser = userRef.val();
+  const currentCalendars = currentUser.calendars ? currentUser.calendars : null;
+  console.log(currentCalendars);
+  const geocode = async () => {
+    const eventsRef = await admin
+      .database()
+      .ref("meta")
+      .orderByKey()
+      .once("value");
+    const geocodedEvents = eventsRef.val();
+    const events = geocodedEvents ? Object.values(geocodedEvents) : null;
+    return events;
+  };
+  // const geocodedEvents = [];
+  // const abc = currentCalendars
+  //   ? currentCalendars.map(async (calendar) => {
+  //       const eventsRef = await admin
+  //         .database()
+  //         .ref("meta")
+  //         .orderByChild("calendarName")
+  //         .equalTo(calendar)
+  //         .once("value");
+  //       const geocodedEvent = eventsRef.val();
+  //       const geo = Object.values(geocodedEvent);
+  //       geocodedEvents.push(geo);
+  //     })
+  //   : geocode();
+  // const events = await Promise.all(geocodedEvents);
+  const events = await geocode();
+  // console.log(events);
+  res.status(200).send(events);
+  // res.write("event: initialResponse\n");
+  // res.write("data: " + JSON.stringify(events) + "\n\n");
   // Set up listener for real-time updates for stream 2
-  const eventUpdatesRef = admin.database().ref("meta").orderByKey();
-  eventUpdatesRef.on("value", (snapshot) => {
-    const updatedEvents = snapshot.val();
-    const events = updatedEvents ? Object.values(updatedEvents) : null;
-    res.write("id: " + uuidv4() + "\n");
-    res.write("event: updatedEvents\n");
-    res.write("data: " + JSON.stringify(events) + "\n\n");
-    res.write("\n\n");
-  });
-  req.on("close", () => {
-    // if (!res.writableEnded) {
-    // res.end();
-    eventUpdatesRef.off();
-    console.log(
-      req.query.email,
-      "was left at",
-      moment().format("MMM DD, HH:mm:ss A")
-    );
-    const usersRef = admin.database().ref("users");
-    const newUserId = encode(req.query.email);
-    const newUserRef = usersRef.child(newUserId);
-    const newUser = {
-      visitedAt: moment().format("YYYY-MM-DD HH:mm:ss A"),
-    };
-    newUserRef
-      .once("value")
-      .then((snapshot) => {
-        const exist = snapshot.exists();
-        exist
-          ? newUserRef
-              .update(newUser)
-              .then(() => {
-                console.log("Updated user successfully!");
-              })
-              .catch((error) => {
-                console.error("Error updating user:", error);
-              })
-          : console.log("error");
-      })
-      .catch((error) => {
-        console.error("Error updating user:", error);
-      });
-    // }
-  });
+  // const eventUpdatesRef = admin.database().ref("meta").orderByKey();
+  // eventUpdatesRef.on("value", (snapshot) => {
+  //   const updatedEvents = snapshot.val();
+  //   const events = updatedEvents ? Object.values(updatedEvents) : null;
+  //   res.write("id: " + uuidv4() + "\n");
+  //   res.write("event: updatedEvents\n");
+  //   res.write("data: " + JSON.stringify(events) + "\n\n");
+  //   res.write("\n\n");
+  // });
+  // req.on("close", () => {
+  //   // if (!res.writableEnded) {
+  //   // res.end();
+  //   eventUpdatesRef.off();
+  //   console.log(
+  //     req.query.email,
+  //     "was left at",
+  //     moment().format("MMM DD, HH:mm:ss A")
+  //   );
+  //   const usersRef = admin.database().ref("users");
+  //   const newUserId = encode(req.query.email);
+  //   const newUserRef = usersRef.child(newUserId);
+  //   const newUser = {
+  //     visitedAt: moment().format("YYYY-MM-DD HH:mm:ss A"),
+  //   };
+  //   newUserRef
+  //     .once("value")
+  //     .then((snapshot) => {
+  //       const exist = snapshot.exists();
+  //       exist
+  //         ? newUserRef
+  //             .update(newUser)
+  //             .then(() => {
+  //               console.log("Updated user successfully!");
+  //             })
+  //             .catch((error) => {
+  //               console.error("Error updating user:", error);
+  //             })
+  //         : console.log("error");
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error updating user:", error);
+  //     });
+  //   // }
+  // });
   // } catch (error) {
   //   console.error("Error retrieving events:", error);
   //   res.status(500).send("Internal Server Error");

@@ -28,14 +28,15 @@ const App = () => {
   const [user, setUser] = useState({});
   const [users, setUsers] = useState([]);
   const [events, setEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [grouping, setGrouping] = useState([]);
   const [cevents, setCevents] = useState([]);
   const [groups, setGroups] = useState([]);
   const [calendars, setCalendars] = useState([]);
+  const [filteredCalendars, setFilteredCalendars] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newUsers, setNewUsers] = useState(0);
   const [messageApi, contextHolder] = message.useMessage();
-  console.log(messageApi);
   const logout = () => {
     messageApi.open({
       type: "success",
@@ -126,11 +127,25 @@ const App = () => {
 
   useEffect(() => {
     const theUser = localStorage.getItem("user");
+
+    const usersSource = new EventSource(`${getAllUsers}?email=${email}`, {
+      withCredentials: true,
+    });
+    usersSource.addEventListener("initialResponse", fetchUsers);
+    usersSource.addEventListener("updatedUsers", fetchUpdatedUsers);
     if (theUser && !theUser.includes("undefined")) {
       const email = JSON.parse(theUser).email;
-      const eventSource = new EventSource(`${getEvents}?email=${email}`, {
-        withCredentials: true,
-      });
+      // const eventSource = new EventSource(`${getEvents}?email=${email}`, {
+      //   withCredentials: true,
+      // });
+      axios
+        .get(`${getEvents}?email=${email}`)
+        .then((res) => {
+          console.log(res.data);
+          // res.data.length() > 1
+          setEvents(res.data);
+        })
+        .catch((err) => console.log(err));
       const ceventSource = new EventSource(getCustomEvents, {
         withCredentials: true,
       });
@@ -144,13 +159,13 @@ const App = () => {
       const groupsSource = new EventSource(getGroups, {
         withCredentials: true,
       });
-      setUser(JSON.parse(theUser));
+
       setLoading(true);
-      eventSource.addEventListener("initialResponse", fetchEvents);
+      // eventSource.addEventListener("initialResponse", fetchEvents);
       ceventSource.addEventListener("initialResponse", fetchCevents);
       calendarSource.addEventListener("initialResponse", fetchCalendars);
       groupsSource.addEventListener("initialResponse", fetchGroups);
-      eventSource.addEventListener("updatedEvents", fetchUpdatedEvents);
+      // eventSource.addEventListener("updatedEvents", fetchUpdatedEvents);
       ceventSource.addEventListener("updatedCevents", fetchUpdatedCevents);
       calendarSource.addEventListener(
         "updatedCalendars",
@@ -160,22 +175,19 @@ const App = () => {
       dataSource.addEventListener("initialResponse", fetchData);
       dataSource.addEventListener("updatedGroupings", fetchUpdatedData);
       return () => {
-        eventSource.close();
+        // eventSource.close();
         ceventSource.close();
         calendarSource.close();
         dataSource.close();
         groupsSource.close();
       };
     }
-    const usersSource = new EventSource(`${getAllUsers}?email=${email}`, {
-      withCredentials: true,
-    });
-    usersSource.addEventListener("initialResponse", fetchUsers);
-    usersSource.addEventListener("updatedUsers", fetchUpdatedUsers);
     return () => {
       usersSource.close();
     };
   }, []);
+
+  const theUser = localStorage.getItem("user");
   useEffect(() => {
     const convertToDate = (dateString) => {
       // Split the string into date and time components
@@ -196,9 +208,7 @@ const App = () => {
 
     const getNewUsersNum = () => {
       if (users.length > 1) {
-        const admin = users.find(
-          (user) => user.email === process.env.REACT_APP_SUPERADMIN
-        );
+        const admin = users.find((user) => user.roll === "superadmin");
         const checkedTime = admin.checkedAt ? admin.checkedAt : admin.createdAt;
 
         const xin = users.filter(
@@ -208,13 +218,46 @@ const App = () => {
         return newUsersNum;
       } else return 0;
     };
+    const getCurrentUser = () => {
+      if (users.length > 1) {
+        const decoded = JSON.parse(theUser);
+        // console.log(users);
+        const currentUser = users.find((user) => user.email === decoded.email);
+        return currentUser;
+      } else return null;
+    };
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
     const usersNum = getNewUsersNum();
     setNewUsers(usersNum);
-  }, [users]);
-  const theUser = localStorage.getItem("user");
+  }, [users, theUser]);
+  useEffect(() => {
+    const filter = () => {
+      const calendarsd = user
+        ? user.calendars
+          ? calendars
+            ? calendars.filter((calendar) => {
+                return user.calendars.includes(calendar.label);
+              })
+            : []
+          : calendars
+        : [];
+      return calendarsd;
+    };
+    const calendarss = filter();
+    setFilteredCalendars(calendarss);
+  }, [user, calendars]);
+  useEffect(() => {
+    const calendarArray = filteredCalendars.map((calendar) => calendar.value);
+    const ev = events.filter((event) =>
+      calendarArray.includes(event.calendarId)
+    );
+    console.log(ev);
+    setFilteredEvents(ev);
+  }, [events, filteredCalendars]);
+  console.log(filteredEvents);
   const email = theUser ? JSON.parse(theUser).email : null;
   const isAuthenticated = theUser ? true : false;
-  console.log(users);
   return (
     <div>
       {contextHolder}
@@ -240,7 +283,16 @@ const App = () => {
               path="/admin"
               element={isAuthenticated ? <Adimin /> : <Navigate to="/login" />}
             >
-              <Route path="users" element={<AdminContainer users={users} />} />
+              <Route
+                path="users"
+                element={
+                  <AdminContainer
+                    users={users}
+                    calendars={calendars}
+                    user={user}
+                  />
+                }
+              />
               <Route
                 path="groups"
                 element={
@@ -253,10 +305,10 @@ const App = () => {
               element={
                 isAuthenticated ? (
                   <Mapbox
-                    events={events.concat(cevents)}
+                    events={filteredEvents.concat(cevents)}
                     user={user}
                     newUsersNum={newUsers}
-                    calendars={calendars.concat("").concat(groups)}
+                    calendars={filteredCalendars.concat("").concat(groups)}
                     grouping={grouping}
                   />
                 ) : (

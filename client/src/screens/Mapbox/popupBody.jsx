@@ -46,9 +46,11 @@ export default function PopupBody(props) {
   const theUser = localStorage.getItem("user");
   const user = JSON.parse(theUser);
 
-  const isSuperAdmin =
-    user.email === process.env.REACT_APP_SUPERADMIN ? true : false;
-  console.log(isSuperAdmin);
+  const isAdmin =
+    props.user.roll === "superadmin" || props.user.roll === "admin"
+      ? true
+      : false;
+  console.log(isAdmin);
   const startDate = moment(data.start.dateTime).format("MMM DD, HH:mm A");
   const endDate = moment(data.end.dateTime).format("MMM DD, HH:mm A");
   return (
@@ -99,7 +101,7 @@ export default function PopupBody(props) {
         {/* <p>{data.reminders.overrides[0].minutes} minutes before</p> */}
         {/* </Space> */}
       </div>
-      {isSuperAdmin ? (
+      {isAdmin ? (
         <div style={{ position: "absolute", bottom: -1, right: 3 }}>
           <Popconfirm
             title="Warning"
@@ -113,7 +115,7 @@ export default function PopupBody(props) {
           </Popconfirm>
         </div>
       ) : null}
-      {isSuperAdmin ? (
+      {isAdmin ? (
         <div style={{ position: "absolute", bottom: -1, left: 3 }}>
           <a href="#" onClick={() => props.onEdit()}>
             <EditOutlined />

@@ -114,7 +114,7 @@ export default function Mapbox(props) {
   const pins = useMemo(
     () =>
       filteredRangedEvents?.map((event, index) => {
-        if (event.latitude && event.longitude)
+        if (event && event.latitude && event.longitude)
           return (
             <Marker
               key={`marker-${index}`}
@@ -172,6 +172,7 @@ export default function Mapbox(props) {
               >
                 <PopupBody
                   data={popupInfo}
+                  user={props.user}
                   onDelete={() => {
                     handleDeleteOk(
                       popupInfo.id,

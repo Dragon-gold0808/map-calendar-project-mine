@@ -51,11 +51,11 @@ function ControlPanel({
   const [drawerContent, setDrawerContent] = useState();
   const [drawerTitle, setDrawerTitle] = useState();
   const [checkedFilters, setCheckedFilters] = useState([]);
+  const [checkedGroups, setCheckedGroups] = useState([]);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [grouping, setGrouping] = useState();
   const [calendarData, setCalendarData] = useState();
   const [expandedKeys, setExpandedKeys] = useState([]);
-  const [checkedKeys, setCheckedKeys] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [autoExpandParent, setAutoExpandParent] = useState(true);
 
@@ -72,7 +72,6 @@ function ControlPanel({
       : null;
     setGrouping(group);
   }, [data, filters]);
-  console.log(data);
   const handleDeleteOk = ({ value, kind, label }) => {
     setConfirmLoading(true);
     const deleteUrl = kind === "group" ? deleteGroup : deleteCalendar;
@@ -112,84 +111,100 @@ function ControlPanel({
               group.calendars && group.calendars[0]
                 ? group.calendars.map((calendar) => {
                     return {
-                      title: isSuperAdmin ? (
-                        <Dropdown
-                          // menu={{ items: createOptions }}
-                          overlay={
-                            <Menu>
-                              <Menu.Item key="edit">
-                                <a
-                                  onClick={(ee) => {
-                                    // ee.preventDefault();
-                                    ee.stopPropagation();
-
-                                    setDrawerOpen(true);
-                                    setDrawerTitle("Edit Calendar");
-                                    calendar.kind === "group"
-                                      ? setDrawerContent(
-                                          <CalendarForm
-                                            onDrawerClose={onDrawerClose}
-                                            title={calendar.label}
-                                            desc={calendar.desc}
-                                            id={calendar.value}
-                                            color={calendar.color}
-                                            mode="edit-group"
-                                          />
-                                        )
-                                      : setDrawerContent(
-                                          <CalendarForm
-                                            onDrawerClose={onDrawerClose}
-                                            title={calendar.label}
-                                            desc={calendar.desc}
-                                            id={calendar.value}
-                                            mode="edit-calendar"
-                                          />
-                                        );
-                                  }}
-                                >
-                                  <EditOutlined /> &nbsp; Edit
-                                </a>
-                              </Menu.Item>
-                              <Menu.Item key="delete">
-                                <Popconfirm
-                                  title="Warning"
-                                  description={`Are you sure want to delete ${calendar.label}?`}
-                                  onConfirm={(ee) => handleDeleteOk(calendar)}
-                                  key={calendar.value}
-                                >
+                      title: isAdmin ? (
+                        <>
+                          <Dropdown
+                            // menu={{ items: createOptions }}
+                            overlay={
+                              <Menu>
+                                <Menu.Item key="edit">
                                   <a
-                                    href="#"
                                     onClick={(ee) => {
+                                      // ee.preventDefault();
                                       ee.stopPropagation();
+
+                                      setDrawerOpen(true);
+                                      setDrawerTitle("Edit Calendar");
+                                      calendar.kind === "group"
+                                        ? setDrawerContent(
+                                            <CalendarForm
+                                              onDrawerClose={onDrawerClose}
+                                              title={calendar?.label}
+                                              desc={calendar?.desc}
+                                              id={calendar?.value}
+                                              color={calendar?.color}
+                                              mode="edit-group"
+                                            />
+                                          )
+                                        : setDrawerContent(
+                                            <CalendarForm
+                                              onDrawerClose={onDrawerClose}
+                                              title={calendar?.label}
+                                              desc={calendar?.desc}
+                                              id={calendar?.value}
+                                              mode="edit-calendar"
+                                            />
+                                          );
                                     }}
                                   >
-                                    <DeleteOutlined />
-                                    &nbsp;Delete
+                                    <EditOutlined /> &nbsp; Edit
                                   </a>
-                                </Popconfirm>
-                              </Menu.Item>
-                            </Menu>
-                          }
-                          trigger={["contextMenu"]}
-                        >
-                          <Tooltip
-                            title={calendar.desc}
-                            key={calendar.value}
-                            color={calendar.color}
+                                </Menu.Item>
+                                <Menu.Item key="delete">
+                                  <Popconfirm
+                                    title="Warning"
+                                    description={`Are you sure want to delete ${calendar?.label}?`}
+                                    onConfirm={(ee) => handleDeleteOk(calendar)}
+                                    key={calendar?.value}
+                                  >
+                                    <a
+                                      href="#"
+                                      onClick={(ee) => {
+                                        ee.stopPropagation();
+                                      }}
+                                    >
+                                      <DeleteOutlined />
+                                      &nbsp;Delete
+                                    </a>
+                                  </Popconfirm>
+                                </Menu.Item>
+                              </Menu>
+                            }
+                            trigger={["contextMenu"]}
                           >
-                            {calendar.label}
-                          </Tooltip>
-                        </Dropdown>
+                            <Tooltip
+                              title={calendar?.desc}
+                              key={calendar?.value}
+                              color={calendar?.color}
+                            >
+                              {calendar?.label}
+                            </Tooltip>
+                          </Dropdown>
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: "-57px",
+                              top: "-4px",
+                            }}
+                          >
+                            <Pin
+                              color={calendar?.color}
+                              type={
+                                calendar.kind === "group" ? "group" : "calendar"
+                              }
+                            />
+                          </div>
+                        </>
                       ) : (
                         <Tooltip
-                          title={calendar.desc}
-                          key={calendar.value}
-                          color={calendar.color}
+                          title={calendar?.desc}
+                          key={calendar?.value}
+                          color={calendar?.color}
                         >
-                          {calendar.label}
+                          {calendar?.label}
                         </Tooltip>
                       ),
-                      key: calendar.value,
+                      key: calendar?.value,
                     };
                   })
                 : [],
@@ -198,8 +213,6 @@ function ControlPanel({
       : null;
     setCalendarData(calendard);
   }, [grouping]);
-  console.log(expandedKeys);
-  console.log(grouping);
 
   const treeData = [
     {
@@ -249,23 +262,18 @@ function ControlPanel({
     },
   ];
   const onExpand = (expandedKeysValue) => {
-    console.log("onExpand", expandedKeysValue);
+    // console.log("onExpand", expandedKeysValue);
     // if not set autoExpandParent to false, if children expanded, parent can not collapse.
     // or, you can remove all expanded children keys.
     setExpandedKeys(expandedKeysValue);
     setAutoExpandParent(false);
   };
-  const onCheck = (checkedKeysValue) => {
-    console.log("onCheck", checkedKeysValue);
-    setCheckedKeys(checkedKeysValue);
-  };
   const onSelect = (selectedKeysValue, info) => {
-    console.log("onSelect", info);
+    // console.log("onSelect", info);
     setSelectedKeys(selectedKeysValue);
   };
-
-  const isSuperAdmin =
-    user.email === process.env.REACT_APP_SUPERADMIN ? true : false;
+  const isAdmin =
+    user.roll === "superadmin" || user.roll === "admin" ? true : false;
 
   const createOptions = [
     {
@@ -375,6 +383,7 @@ function ControlPanel({
   useEffect(() => {
     const initialValues = []; //filters.map((filter) => filter.value);
     setCheckedFilters(initialValues);
+    setCheckedGroups(initialValues);
     onFilterChange(initialValues);
   }, [filters, onFilterChange]);
 
@@ -415,9 +424,12 @@ function ControlPanel({
 
   const onFiltersChange = (checkedValues) => {
     setCheckedFilters(checkedValues);
-    onFilterChange(checkedValues);
+    onFilterChange(checkedValues.concat(checkedGroups));
   };
-
+  const onGroupsChange = (checkedValues) => {
+    setCheckedGroups(checkedValues);
+    onFilterChange(checkedFilters.concat(checkedValues));
+  };
   const onDateChange = (value, dateString) => {
     console.log("Selected Time: ", value);
     console.log("Formatted Selected Time: ", dateString);
@@ -438,9 +450,9 @@ function ControlPanel({
         <Title level={2} style={{ textAlign: "center" }}>
           Stay Organized!
         </Title>
-        {isSuperAdmin ? <Divider /> : null}
+        {isAdmin ? <Divider /> : null}
         <Space direction="vertical" style={{ marginBottom: 20, width: "100%" }}>
-          {/* {isSuperAdmin ? ( */}
+          {/* {isAdmin ? ( */}
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             <Badge count={newUsersNum}>
               <Button
@@ -458,7 +470,7 @@ function ControlPanel({
                 type="primary"
                 shape="round"
                 size="large"
-                // style={{ display: isSuperAdmin ? "" : "none" }}
+                // style={{ display: isAdmin ? "" : "none" }}
               >
                 <PlusCircleOutlined />
                 CREATE
@@ -498,8 +510,8 @@ function ControlPanel({
           />
           <Checkbox.Group
             // options={filters}
-            value={checkedFilters}
-            onChange={onFiltersChange}
+            value={checkedGroups}
+            onChange={onGroupsChange}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -532,7 +544,7 @@ function ControlPanel({
                         width: "232px",
                       }}
                     >
-                      {isSuperAdmin ? (
+                      {isAdmin ? (
                         <Dropdown
                           // menu={{ items: createOptions }}
                           overlay={
