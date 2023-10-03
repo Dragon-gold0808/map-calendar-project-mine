@@ -204,6 +204,23 @@ async function editEvent(auth, req) {
     throw new Error("Failed to modify event");
   }
 }
+async function listCalendars(auth) {
+  const calendar = google.calendar({ version: "v3", auth });
+  try {
+    // Get a list of all calendars
+    const response = await calendar.calendarList.list({});
+    // Filter out the calendar with the specified ID
+    const calendars = response.data.items.filter(
+      (calendar) =>
+        calendar.id !== "addressbook#contacts@group.v.calendar.google.com"
+    );
+
+    return calendars;
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    throw new Error("Failed to fetch events");
+  }
+}
 async function listEvents(auth) {
   const calendar = google.calendar({ version: "v3", auth });
   try {
@@ -223,7 +240,7 @@ async function listEvents(auth) {
       return calendar.events.list({
         calendarId: calendarId,
         timeMin: new Date().toISOString(),
-        maxResults: 10000, // Adjust the number of events to retrieve as needed
+        maxResults: 1000, // Adjust the number of events to retrieve as needed
         singleEvents: true,
         orderBy: "startTime",
       });
@@ -250,7 +267,7 @@ async function listEvents(auth) {
       eventsData.push(...events);
     });
 
-    return { eventsData, calendars };
+    return eventsData;
   } catch (error) {
     console.error("Error fetching events:", error);
     throw new Error("Failed to fetch events");
@@ -287,23 +304,13 @@ async function createWatch(auth, resourceType, resourceId, callbackUrl) {
   }, WATCH_EXPIRATION_TIME_MS);
 }
 
-async function setupCalendarWatch(auth, callbackUrl) {
+async function setupCalendarListWatch(auth, callbackUrl) {
   // Delete all running channels
-  const calendar = google.calendar({ version: "v3", auth });
-  // const channelsResponse = await calendar.channels.list();
-  // const channels = channelsResponse.data.items;
-  // // Stop each channel individually
-  // for (const channel of channels) {
-  //   await calendar.channels.stop({
-  //     requestBody: {
-  //       id: channel.id,
-  //     },
-  //   });
-  //   console.log(`Stopped watch channel with ID: ${channel.id}`);
-  // }
-  // Create the initial watch for calendar list changes
   await createWatch(auth, "calendarList", "calendarList", callbackUrl);
+}
+async function setupCalendarEventsWatch(auth, callbackUrl) {
   // Get a list of all calendars
+  const calendar = google.calendar({ version: "v3", auth });
   const response = await calendar.calendarList.list({});
   const calendars = response.data.items.filter(
     (calendar) =>
@@ -318,11 +325,13 @@ module.exports = {
   createWatch,
   authorize,
   listEvents,
+  listCalendars,
   addCalendar,
   deleteCalendar,
-  setupCalendarWatch,
+  setupCalendarEventsWatch,
   updateCalendar,
   addEvent,
   deleteEvent,
   editEvent,
+  setupCalendarListWatch,
 };

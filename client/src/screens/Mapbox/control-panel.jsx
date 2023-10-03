@@ -60,14 +60,17 @@ function ControlPanel({
   const [autoExpandParent, setAutoExpandParent] = useState(true);
 
   useEffect(() => {
+    const filterLabels = filters.map((filter) => filter.label);
     const group = data
       ? data.map((item) => {
-          const calendars = item.calendars
-            ? item.calendars.map((val) => {
-                return filters.find((filter) => filter.label === val);
-              })
+          const groupCal = item.calendars
+            ? item.calendars
+                .filter((val) => filterLabels.includes(val))
+                .map((val) => {
+                  return filters.find((filter) => filter.label === val);
+                })
             : null;
-          return { ...item, calendars: calendars };
+          return { ...item, calendars: groupCal };
         })
       : null;
     setGrouping(group);
@@ -190,19 +193,39 @@ function ControlPanel({
                             <Pin
                               color={calendar?.color}
                               type={
-                                calendar.kind === "group" ? "group" : "calendar"
+                                calendar?.kind === "group"
+                                  ? "group"
+                                  : "calendar"
                               }
                             />
                           </div>
                         </>
                       ) : (
-                        <Tooltip
-                          title={calendar?.desc}
-                          key={calendar?.value}
-                          color={calendar?.color}
-                        >
-                          {calendar?.label}
-                        </Tooltip>
+                        <>
+                          <Tooltip
+                            title={calendar?.desc}
+                            key={calendar?.value}
+                            color={calendar?.color}
+                          >
+                            {calendar?.label}
+                          </Tooltip>
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: "-57px",
+                              top: "-4px",
+                            }}
+                          >
+                            <Pin
+                              color={calendar?.color}
+                              type={
+                                calendar?.kind === "group"
+                                  ? "group"
+                                  : "calendar"
+                              }
+                            />
+                          </div>
+                        </>
                       ),
                       key: calendar?.value,
                     };
@@ -273,7 +296,7 @@ function ControlPanel({
     setSelectedKeys(selectedKeysValue);
   };
   const isAdmin =
-    user.roll === "superadmin" || user.roll === "admin" ? true : false;
+    user?.roll === "superadmin" || user?.roll === "admin" ? true : false;
 
   const createOptions = [
     {
@@ -452,32 +475,32 @@ function ControlPanel({
         </Title>
         {isAdmin ? <Divider /> : null}
         <Space direction="vertical" style={{ marginBottom: 20, width: "100%" }}>
-          {/* {isAdmin ? ( */}
-          <div style={{ display: "flex", justifyContent: "space-around" }}>
-            <Badge count={newUsersNum}>
-              <Button
-                type="primary"
-                shape="round"
-                size="large"
-                href="/admin/users"
-              >
-                <UserAddOutlined />
-                USERS
-              </Button>
-            </Badge>
-            <Dropdown menu={{ items: createOptions }} trigger={["click"]}>
-              <Button
-                type="primary"
-                shape="round"
-                size="large"
-                // style={{ display: isAdmin ? "" : "none" }}
-              >
-                <PlusCircleOutlined />
-                CREATE
-              </Button>
-            </Dropdown>
-          </div>
-          {/* ) : null} */}
+          {isAdmin ? (
+            <div style={{ display: "flex", justifyContent: "space-around" }}>
+              <Badge count={newUsersNum}>
+                <Button
+                  type="primary"
+                  shape="round"
+                  size="large"
+                  href="/admin/users"
+                >
+                  <UserAddOutlined />
+                  USERS
+                </Button>
+              </Badge>
+              <Dropdown menu={{ items: createOptions }} trigger={["click"]}>
+                <Button
+                  type="primary"
+                  shape="round"
+                  size="large"
+                  // style={{ display: isAdmin ? "" : "none" }}
+                >
+                  <PlusCircleOutlined />
+                  CREATE
+                </Button>
+              </Dropdown>
+            </div>
+          ) : null}
           <Divider orientation="left"> Date Range </Divider>
           <Row>
             <Col span={20} offset={2}>

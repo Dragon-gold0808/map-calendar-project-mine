@@ -128,7 +128,7 @@ const App = () => {
   useEffect(() => {
     const theUser = localStorage.getItem("user");
 
-    const usersSource = new EventSource(`${getAllUsers}?email=${email}`, {
+    const usersSource = new EventSource(getAllUsers, {
       withCredentials: true,
     });
     usersSource.addEventListener("initialResponse", fetchUsers);
@@ -209,10 +209,14 @@ const App = () => {
     const getNewUsersNum = () => {
       if (users.length > 1) {
         const admin = users.find((user) => user.roll === "superadmin");
-        const checkedTime = admin.checkedAt ? admin.checkedAt : admin.createdAt;
-
+        const checkedTime = admin
+          ? admin.checkedAt
+            ? admin.checkedAt
+            : admin.createdAt
+          : 0;
+        const checked = checkedTime ? convertToDate(checkedTime) : 0;
         const xin = users.filter(
-          (user) => convertToDate(user.createdAt) > convertToDate(checkedTime)
+          (user) => convertToDate(user.createdAt) > checked
         );
         const newUsersNum = xin.length;
         return newUsersNum;
@@ -222,7 +226,9 @@ const App = () => {
       if (users.length > 1) {
         const decoded = JSON.parse(theUser);
         // console.log(users);
-        const currentUser = users.find((user) => user.email === decoded.email);
+        const currentUser = decoded
+          ? users.find((user) => user.email === decoded.email)
+          : null;
         return currentUser;
       } else return null;
     };
@@ -247,6 +253,7 @@ const App = () => {
     const calendarss = filter();
     setFilteredCalendars(calendarss);
   }, [user, calendars]);
+
   useEffect(() => {
     const calendarArray = filteredCalendars.map((calendar) => calendar.value);
     const ev = events.filter((event) =>

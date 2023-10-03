@@ -111,6 +111,7 @@ export default function Mapbox(props) {
         console.log(err);
       });
   };
+  console.log(filteredEvents);
   const pins = useMemo(
     () =>
       filteredRangedEvents?.map((event, index) => {

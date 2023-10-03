@@ -47,7 +47,7 @@ export default function PopupBody(props) {
   const user = JSON.parse(theUser);
 
   const isAdmin =
-    props.user.roll === "superadmin" || props.user.roll === "admin"
+    props.user?.roll === "superadmin" || props.user?.roll === "admin"
       ? true
       : false;
   console.log(isAdmin);

@@ -14,9 +14,11 @@ const { encode, decode } = require("base-64");
 const {
   authorize,
   listEvents,
+  listCalendars,
   addCalendar,
   deleteCalendar,
-  setupCalendarWatch,
+  setupCalendarListWatch,
+  setupCalendarEventsWatch,
   createWatch,
   updateCalendar,
   addEvent,
@@ -68,7 +70,13 @@ async function backUrl() {
 
 async function setupCalendarWatchWithTunnel() {
   const fullBackUrl = await backUrl();
-  await setupCalendarWatch(
+  await setupCalendarListWatch(
+    await authorize(),
+    `${fullBackUrl}/api/set-calendars`
+  ).catch((error) => {
+    console.error("Error setting up calendar watch:", error);
+  });
+  await setupCalendarEventsWatch(
     await authorize(),
     `${fullBackUrl}/api/set-events`
   ).catch((error) => {
@@ -240,50 +248,50 @@ app.post("/api/delete-user", async (req, res) => {
 
 // Route to get the whole user list
 app.get("/api/get-users", async (req, res) => {
-  if (req.query.email === superadminEmail) {
-    res.writeHead(200, {
-      Connection: "keep-alive",
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Access-Control-Allow-Origin": APP_URL,
-      "Access-Control-Allow-credentials": "true",
-    });
+  // if (req.query.email === superadminEmail) {
+  res.writeHead(200, {
+    Connection: "keep-alive",
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Access-Control-Allow-Origin": APP_URL,
+    "Access-Control-Allow-credentials": "true",
+  });
 
-    // Fetch all users from the database
-    const usersSnapshot = await admin
-      .database()
-      .ref("users")
-      .orderByChild("createdAt")
-      .once("value");
-    const usersData = usersSnapshot.val();
-    const users = Object.values(usersData);
-    res.write("event: initialResponse\n");
-    res.write("data: " + JSON.stringify(users) + "\n\n");
-    const usersUpdatesRef = admin
-      .database()
-      .ref("users")
-      .orderByChild("createdAt");
-    usersUpdatesRef.on("value", (snapshot) => {
-      const updatedUsers = snapshot.val();
-      const users = Object.values(updatedUsers);
-      res.write("id: " + uuidv4() + "\n");
-      res.write("event: updatedUsers\n");
-      res.write("data: " + JSON.stringify(users));
-      res.write("\n\n");
-      // res.json(events);
-      req.on("close", () => {
-        // if (!res.writableEnded) {
-        // res.end();
-        usersUpdatesRef.off();
-        // console.log("Stopped sending events.");
-        // }
-      });
+  // Fetch all users from the database
+  const usersSnapshot = await admin
+    .database()
+    .ref("users")
+    .orderByChild("createdAt")
+    .once("value");
+  const usersData = usersSnapshot.val();
+  const users = Object.values(usersData);
+  res.write("event: initialResponse\n");
+  res.write("data: " + JSON.stringify(users) + "\n\n");
+  const usersUpdatesRef = admin
+    .database()
+    .ref("users")
+    .orderByChild("createdAt");
+  usersUpdatesRef.on("value", (snapshot) => {
+    const updatedUsers = snapshot.val();
+    const users = Object.values(updatedUsers);
+    res.write("id: " + uuidv4() + "\n");
+    res.write("event: updatedUsers\n");
+    res.write("data: " + JSON.stringify(users));
+    res.write("\n\n");
+    // res.json(events);
+    req.on("close", () => {
+      // if (!res.writableEnded) {
+      // res.end();
+      usersUpdatesRef.off();
+      // console.log("Stopped sending events.");
+      // }
     });
-  } else {
-    res.status(401).json({
-      message: "Unauthorized access",
-    });
-  }
+  });
+  // } else {
+  //   res.status(401).json({
+  //     message: "Unauthorized access",
+  //   });
+  // }
 });
 
 // Function to verify the Google token
@@ -327,7 +335,7 @@ async function geocodeAddresses(data) {
 app.get("/api/events", async (req, res) => {
   try {
     const response = await authorize().then(listEvents);
-    const geocodedEvents = await geocodeAddresses(response.eventsData);
+    const geocodedEvents = await geocodeAddresses(response);
     const metaRef = admin.database().ref("meta");
     const eventsRef = admin.database().ref("events");
     const calendarNamesRef = admin.database().ref("calendars");
@@ -402,17 +410,126 @@ app.get("/api/events", async (req, res) => {
   }
 });
 
-app.get("/api/start", async (req, res) => {
+app.get("/api/watch", async (req, res) => {
+  try {
+    setupCalendarWatchWithTunnel();
+
+    res.status(200).json({ message: "Watch started!" });
+    // res.json(events);
+  } catch (error) {
+    console.error("Error retrieving events:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.get("/api/set-calendars", async (req, res) => {
+  try {
+    const response = await authorize().then(listCalendars);
+    const calendarNamesRef = admin.database().ref("calendars");
+    await calendarNamesRef.set({
+      [decode("initial")]: {
+        summary: "initial",
+        kind: "calendar#calendarListEntry",
+        id: "initial",
+        backgroundColor: "#42d692",
+      },
+    });
+
+    response.map(async (calendar) => {
+      const newCalendarId = encode(calendar.id);
+      const newCalendarRef = calendarNamesRef.child(newCalendarId);
+      await newCalendarRef.set(calendar);
+    });
+    await calendarNamesRef.child(decode("initial")).remove();
+    // Respond with a success message
+    res.status(200).json({ message: "Events data saved to Firebase" });
+    // res.json(events);
+  } catch (error) {
+    console.error("Error retrieving events:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/api/set-calendars", async (req, res) => {
+  try {
+    console.log(req);
+    const response = await authorize().then(listCalendars);
+    const calendarNamesRef = admin.database().ref("calendars");
+    await calendarNamesRef.set({
+      [decode("initial")]: {
+        summary: "initial",
+        kind: "calendar#calendarListEntry",
+        id: "initial",
+        backgroundColor: "#42d692",
+      },
+    });
+
+    response.map(async (calendar) => {
+      const newCalendarId = encode(calendar.id);
+      const newCalendarRef = calendarNamesRef.child(newCalendarId);
+      await newCalendarRef.set(calendar);
+    });
+    await calendarNamesRef.child(decode("initial")).remove();
+    // Respond with a success message
+    res.status(200).json({ message: "Events data saved to Firebase" });
+    // res.json(events);
+  } catch (error) {
+    console.error("Error retrieving events:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get("/api/set-events", async (req, res) => {
   try {
     const response = await authorize().then(listEvents);
-    setupCalendarWatchWithTunnel();
-    const geocodedEvents = await geocodeAddresses(response.eventsData);
-    // Save events data to Firebase Realtime Database
+    const geocodedEvents = await geocodeAddresses(response);
+    const metaRef = admin.database().ref("meta");
     const eventsRef = admin.database().ref("events");
-    await eventsRef.set(geocodedEvents);
-
-    const calendarNamesRef = admin.database().ref("calendars");
-    await calendarNamesRef.set(response.calendars);
+    await metaRef.set({
+      [decode("initial")]: {
+        id: "event.id",
+        calendarId: "event.calendarId",
+        color: "event.color",
+        kind: "event.kind",
+        start: "event.start",
+        end: "event.end",
+      },
+    });
+    await eventsRef.remove();
+    geocodedEvents.map(async (event) => {
+      const newEventData = {
+        id: event.id,
+        calendarId: event.calendarId,
+        color: event.color,
+        kind: event.kind,
+        start: event.start,
+        end: event.end,
+        latitude: event.latitude || null,
+        longitude: event.longitude || null,
+        location: event.location || null,
+        description: event.description || null,
+        calendarName: event.calendarName || null,
+        visibility: event.visibility || null,
+        reminders: event.reminders || null,
+        created: event.created || null,
+        creator: event.creator || null,
+        summary: event.summary || null,
+      };
+      const newEventId = encode(event.id);
+      const newEventRef = eventsRef.child(newEventId);
+      await newEventRef.set(newEventData);
+      const metaEvent = {
+        id: event.id,
+        calendarId: event.calendarId,
+        color: event.color,
+        kind: event.kind,
+        start: event.start,
+        end: event.end,
+        latitude: event.latitude || null,
+        longitude: event.longitude || null,
+      };
+      const newMetaRef = metaRef.child(newEventId);
+      await newMetaRef.set(metaEvent);
+    });
     // Respond with a success message
     res.status(200).json({ message: "Events data saved to Firebase" });
     // res.json(events);
@@ -424,13 +541,12 @@ app.get("/api/start", async (req, res) => {
 
 app.post("/api/set-events", async (req, res) => {
   try {
-    console.log("pull", req);
+    // console.log("pull", req);
     // const response = await authorize().then(listEvents);
     // const geocodedEvents = await geocodeAddresses(response.eventsData);
     // // Save events data to Firebase Realtime Database
     // const eventsRef = admin.database().ref("events");
     // await eventsRef.set(geocodedEvents);
-
     // const calendarNamesRef = admin.database().ref("calendars");
     // await calendarNamesRef.set(response.calendars);
     // // await setupCalendarWatchWithTunnel();
